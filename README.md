@@ -1,14 +1,12 @@
-# distillery
+# Distillery
 
 The context brain for a fleet of unattended coding agents. This repo is the
 source of truth for the context files, directives, and skills that drive
 [igor](https://git.sherver.org/joshtronic/igor) (the harness) and the
 operator's local harnesses -- extracted out of the harness so the same brain
-can pour into more than one glass.
-
-Heavily inspired by [PostHog's context-mill](https://github.com/PostHog/context-mill):
-context as first-class, versioned, validated artifacts that agents consume,
-rather than prose that rots inside whatever repo it started in.
+can pour into more than one glass. Context is treated as first-class,
+versioned, validated artifacts that agents consume, rather than prose that
+rots inside whatever repo it started in.
 
 ## How it works
 
