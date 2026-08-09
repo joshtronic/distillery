@@ -1,0 +1,13 @@
+name: Validate
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests (includes still validate on the real tree)
+        run: make test

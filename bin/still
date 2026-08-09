@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# bin/still -- the distillery's assembler.
+#
+#   still validate          check every skill against the format contract
+#   still build             validate, then write dist/manifest.json
+#   still list              one line per skill (name -- description)
+#
+# The format contract (deterministic; nothing reaches a consumer unchecked):
+#   skills/<dir>/SKILL.md exists, opens with a YAML frontmatter block of flat
+#   `key: value` lines containing name (== <dir>), description (nonempty),
+#   consumers (from the closed list below), source, extracted -- and a
+#   nonempty body after the closing delimiter. Unknown frontmatter keys fail.
+#   Extra files ride in skills/<dir>/files/ and are listed in the manifest.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SKILLS_DIR="$ROOT/skills"
+DIST_DIR="$ROOT/dist"
+
+FRONTMATTER_KEYS="name description consumers source extracted"
+CONSUMERS_VOCAB="igor-surface generic"
+
+fail() { printf 'still: %s\n' "$*" >&2; exit 1; }
+
+# frontmatter <skill.md> -- echo the frontmatter lines (between the first two
+# `---` delimiters); nonzero when the file doesn't open with a frontmatter.
+frontmatter() {
+  local f="$1"
+  [ "$(head -1 "$f")" = "---" ] || return 1
+  awk 'NR==1{next} /^---$/{exit} {print}' "$f"
+}
+
+# fm_get <frontmatter> <key> -- echo the trimmed value for <key>.
+fm_get() {
+  local fm="$1" key="$2" line
+  line=$(grep -E "^${key}:" <<<"$fm" | head -1) || true
+  [ -n "$line" ] || return 1
+  sed -E 's/^[a-z-]+:[[:space:]]*//; s/[[:space:]]+$//' <<<"$line"
+}
+
+validate_skill() {
+  local dir="$1" name f fm v k body_lines
+  name="$(basename "$dir")"
+  f="$dir/SKILL.md"
+  [ -f "$f" ] || { echo "$name: missing SKILL.md"; return 1; }
+  fm=$(frontmatter "$f") || { echo "$name: SKILL.md does not open with '---' frontmatter"; return 1; }
+  # every required key present and nonempty
+  for k in $FRONTMATTER_KEYS; do
+    v=$(fm_get "$fm" "$k") || { echo "$name: frontmatter missing '$k'"; return 1; }
+    [ -n "$v" ] || { echo "$name: frontmatter '$k' is empty"; return 1; }
+  done
+  # no unknown keys
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    k="${line%%:*}"
+    grep -qw "$k" <<<"$FRONTMATTER_KEYS" || { echo "$name: unknown frontmatter key '$k'"; return 1; }
+  done <<<"$fm"
+  # name matches directory
+  [ "$(fm_get "$fm" name)" = "$name" ] || { echo "$name: frontmatter name '$(fm_get "$fm" name)' != directory name"; return 1; }
+  # consumers from the closed vocabulary (comma/space separated)
+  for v in $(fm_get "$fm" consumers | tr ',' ' '); do
+    grep -qw "$v" <<<"$CONSUMERS_VOCAB" || { echo "$name: consumer '$v' not in closed vocabulary ($CONSUMERS_VOCAB)"; return 1; }
+  done
+  # nonempty body after the frontmatter
+  body_lines=$(awk 'c==2 && NF {n++} /^---$/{c++} END{print n+0}' "$f")
+  [ "$body_lines" -gt 0 ] || { echo "$name: empty body after frontmatter"; return 1; }
+  return 0
+}
+
+cmd_validate() {
+  local rc=0 d
+  [ -d "$SKILLS_DIR" ] || fail "no skills/ directory"
+  for d in "$SKILLS_DIR"/*/; do
+    [ -d "$d" ] || continue
+    if ! validate_skill "${d%/}"; then rc=1; fi
+  done
+  [ "$rc" -eq 0 ] && echo "still: all skills valid"
+  return "$rc"
+}
+
+cmd_build() {
+  cmd_validate >/dev/null || fail "validation failed -- nothing ships unvalidated"
+  mkdir -p "$DIST_DIR"
+  local d name fm entries="" files sha
+  for d in "$SKILLS_DIR"/*/; do
+    [ -d "$d" ] || continue
+    name="$(basename "$d")"
+    fm=$(frontmatter "$d/SKILL.md")
+    sha=$(sha256sum "$d/SKILL.md" | cut -d' ' -f1)
+    files=$(find "$d" -type f -not -name SKILL.md | sed "s|$ROOT/||" | sort | jq -R . | jq -sc .)
+    entries+=$(jq -n \
+      --arg name "$name" \
+      --arg desc "$(fm_get "$fm" description)" \
+      --arg consumers "$(fm_get "$fm" consumers)" \
+      --arg path "skills/$name/SKILL.md" \
+      --arg sha "$sha" \
+      --argjson files "$files" \
+      '{name:$name, description:$desc, consumers:($consumers|split(",")|map(gsub("^ +| +$";""))), path:$path, sha256:$sha, files:$files}')$'\n'
+  done
+  jq -sc '{skills: ., built_from: "still build"}' <<<"$entries" > "$DIST_DIR/manifest.json"
+  echo "still: built $DIST_DIR/manifest.json ($(jq '.skills | length' "$DIST_DIR/manifest.json") skills)"
+}
+
+cmd_list() {
+  local d fm
+  for d in "$SKILLS_DIR"/*/; do
+    [ -d "$d" ] || continue
+    fm=$(frontmatter "$d/SKILL.md" 2>/dev/null) || continue
+    printf '%s -- %s\n' "$(basename "$d")" "$(fm_get "$fm" description)"
+  done
+}
+
+case "${1:-}" in
+  validate) cmd_validate ;;
+  build)    cmd_build ;;
+  list)     cmd_list ;;
+  *) fail "usage: still validate|build|list" ;;
+esac
