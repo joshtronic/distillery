@@ -8,6 +8,16 @@ can pour into more than one glass. Context is treated as first-class,
 versioned, validated artifacts that agents consume, rather than prose that
 rots inside whatever repo it started in.
 
+## Mirrors
+
+**Canonical repo: <https://git.sherver.org/joshtronic/distillery>**
+
+Mirrored for _your_ convenience:
+
+- <https://github.com/joshtronic/distillery>
+
+_I don't monitor these services or accept pull/merge requests on them._
+
 ## How it works
 
 - **`skills/<name>/SKILL.md`** -- one distillable unit: YAML frontmatter
