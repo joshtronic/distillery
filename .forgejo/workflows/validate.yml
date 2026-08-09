@@ -9,5 +9,7 @@ jobs:
     runs-on: docker
     steps:
       - uses: actions/checkout@v4
+      - name: Install test dependencies
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends jq make
       - name: Run tests (includes still validate on the real tree)
         run: make test
