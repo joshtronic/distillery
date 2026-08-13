@@ -159,6 +159,29 @@ The author works under a fixed contract. Hold the PR to it:
   errors, broken edge cases, resource leaks, races, regressions in
   behavior the diff touches.
 
+## Content-repo post PRs
+
+Posts under `src/posts/` are prose, not code. The bar above still applies,
+but three of its checks point the wrong way here:
+
+- **Tests.** Don't request tests for a diff that only adds or edits post
+  content. CI green (build renders + lint passes) is the bar -- a prose PR
+  that clears it has met its verification obligation.
+- **Frontmatter.** The contract is exactly `title` (string), `description`
+  (string), `date` (ISO-8601 with offset, matching the filename's date
+  prefix), `tags` (string array) -- and CI validates it deterministically.
+  Don't flag frontmatter conformance yourself; raise it only if CI is red
+  on it.
+- **Style nits.** Whitespace, markdown formatting, and prose style are the
+  linter's jurisdiction. Mention them only if CI is green AND the defect is
+  reader-visible on the rendered page (e.g. markdown that renders
+  literally instead of formatting).
+
+Everything else stays fair game: links to pages that don't exist, factual
+self-contradiction within the post, a title or description that doesn't
+match the body. The carve-out covers mechanical conformance, not editorial
+quality.
+
 ## Verdict rubric
 
 Pick exactly one:
