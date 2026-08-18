@@ -23,11 +23,13 @@ fails validation and drops out of the work pool, loudly.
 Beyond its own prose structure, the dossier is the harness's entire
 vocabulary for a repo's *shape* -- the declared facts that drive merge
 and post-merge verification behavior without the harness special-casing
-a repo by name. Four keys carry that vocabulary today: `url`,
-`automerge.require_human`, `automerge.maintenance`, `landed.kind`. Every
-one lives in the `## Metadata` block below, under the same two rules
-(see Declaration invariants): required-and-explicit on opt-in, and never
-editable through an unattended merge.
+a repo by name. Four keys make up that declared vocabulary: `url`,
+`automerge.require_human`, `automerge.maintenance`, `landed.kind`. That
+is the spec-level shape -- which of them the harness already reads, and
+which are still hardcoded on its side, is the migration note near the
+end. Every one lives in the `## Metadata` block below, under the same
+two rules (see Declaration invariants): required-and-explicit on opt-in,
+and never editable through an unattended merge.
 
 ## Design principles
 
@@ -94,7 +96,7 @@ the harness can simply take the first one after the literal heading
 | --- | --- | --- |
 | `type` | yes | One of the closed type list below |
 | `url` | sites | Canonical live URL; enables auto-merge + deploy barrier (was `agent.json` `.smoke.url`); host must match the H1 |
-| `automerge.require_human` | no | Pins the repo to the human-approval merge gate instead of the shadow-review APPROVE default (was `agent.json` `.automerge.require_human`); a url-less repo is already human-gated unconditionally regardless of this flag |
+| `automerge.require_human` | no | Pins the repo to the human-approval merge gate instead of the shadow-review APPROVE default (was `agent.json` `.automerge.require_human`); a url-less repo is already human-gated unconditionally regardless of this flag, so declare it there only as the prerequisite for `automerge.maintenance`, never as decoration |
 | `automerge.maintenance` | no | Marks a `require_human` repo eligible for the maintenance-tier carve-out: an affirmative shadow APPROVE with no live human REQUEST_CHANGES may still merge a narrow, data-only diff without waiting on a human; meaningless without `automerge.require_human: true` alongside it (see Declaration invariants) |
 | `landed.kind` | no | For a url-less repo, which host-state check verifies a merge actually landed: `igor` (self-pull HEAD check) or `distillery` (served-cache generation-marker check); mutually exclusive with `url` (see Declaration invariants) |
 | `test` | see note | Command that runs the test suite |
@@ -137,7 +139,11 @@ above -- a key added later inherits them too:
    implied" -- the maintenance carve-out exists only to loosen a
    `require_human` pin, so declaring the loosening without the pin is
    an incoherent declaration and validation fails it, loudly, rather
-   than guessing what the author meant. Likewise `landed.kind` on a
+   than guessing what the author meant. The rule keys on the key being
+   present at all, not on its value: `automerge.maintenance: false`
+   without the pin fails the same way, because the carve-out it opts
+   out of does not exist on that repo either. A repo that wants no
+   maintenance tier omits the key. Likewise `landed.kind` on a
    repo that also declares `url` is a contradictory declaration -- the
    landed watch exists only for repos with no live URL to smoke-check
    instead -- and fails validation rather than one key silently
@@ -175,6 +181,13 @@ see below):
 - `landed.kind` is present only on a repo with no `url` key, and its
   value is one of the closed set the watch recognizes (`igor`,
   `distillery`) (Declaration invariant 1).
+
+Those last two bullets are target state, not current behavior.
+`automerge.maintenance` and `landed.kind` have no consumer yet (see
+Authoring and migration), so no validator rejects a bad declaration of
+either today; the checks land with the harness-side wiring that reads
+the keys, in the same change. Don't read them as a validator you can
+lean on right now.
 
 **Un-adopted vs nonconforming -- the migration gate:** a repo that
 has not adopted this spec validates under the legacy rules
@@ -278,7 +291,10 @@ feedback-csv: https://docs.google.com/spreadsheets/d/e/.../pub?output=csv
 
 A url-less repo declaring the merge-shape keys -- no `url`, so no
 deploy barrier; `landed.kind` stands in with the host-state watch
-instead:
+instead. The pin is deliberately absent: a url-less repo is human-gated
+unconditionally, so `automerge.require_human` here would declare
+nothing. The only reason to write it would be as the prerequisite for
+`automerge.maintenance`, which this repo does not take.
 
 ````markdown
 # distillery
@@ -295,7 +311,6 @@ domain -- consumers pin a released proof, not this working tree.
 ```yaml
 type: infra
 test: make test
-automerge.require_human: true
 landed.kind: distillery
 ```
 ````
