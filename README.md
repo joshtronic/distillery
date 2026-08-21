@@ -31,12 +31,27 @@ _I don't monitor these services or accept pull/merge requests on them._
 
 ## The shelf
 
-Run `bin/still list`. Current stock: the unattended worker's operating
-contract, the shadow reviewer's directive, per-surface directives (voice,
-feedback triage, site work, sports digest, /now), the AI-writing-tells
-catalog, the per-repo AGENTS.md dossier spec, the worker permission profile,
-the operator's engineering doctrine, and the ticket skeleton every task spec
-is written against.
+Generated from each skill's `description` frontmatter by `bin/still index`;
+`still index --check` fails CI if this block drifts from the tree. Run
+`bin/still list` for the same listing from your terminal.
+
+<!-- shelf:start -->
+- **ai-writing-tells** — Catalog of AI writing tells to avoid in any prose surface
+- **coding-standards** — Use when writing or reviewing any code change. The coding-output contract -- minimal touch, the two-variety comment rule, TDD with red-tested validation, honest verification claims.
+- **design** — Use when doing visual or UX work on a site -- new UI, redesigns, reskins, or design review. Distinctive-per-subject direction with content preservation and verification-by-screenshot.
+- **doctrine** — The operator's hard-won engineering doctrine for agentic systems -- amnesia, deterministic gates, mechanism over prose, red-tested validation, pre-mortems
+- **dossier-spec** — The dossier's declared-shape vocabulary -- AGENTS.md structure, the Metadata key contract (url, automerge.require_human, automerge.maintenance, landed.kind), and the two invariants (explicit opt-in with fail-fast on partial declarations; no unattended edits to the dossier itself)
+- **feedback-directive** — Player-feedback triage directive: DROP/FILE decision contract over untrusted CSV rows
+- **now-directive** — Weekly /now page refresh directive
+- **product-research** — Use when delegated a product goal for a site or tool -- researching whether and how to pursue it, and producing specced, verifiable tickets. Replaces the retired autonomous-CEO pattern with demand-driven product work.
+- **review-directive** — The shadow code reviewer's directive: verdict contract, review dimensions, diff-appropriateness, comment-bloat findings
+- **site-work-directive** — Weekly website work-pass directive
+- **sports-digest-directive** — Daily sports digest directive: curation by significance, taught-concepts curriculum
+- **ticket-skeleton** — The fixed skeleton every task spec (issue / ticket) is written against -- goal, out-of-scope, verification, done-means; the amnesiac worker reads nothing else
+- **voice** — Igor's shared voice anchor for all writing surfaces
+- **worker-contract** — The unattended worker's operating contract: outcomes (PR/report/block), PR_BODY discipline, TDD, security self-review, scope rules
+- **worker-permissions** — The unattended worker's tool permission profile (Claude Code settings) -- broad dev capability, denied network git / secrets / harness internals
+<!-- shelf:end -->
 
 ## Consuming
 
