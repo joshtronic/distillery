@@ -1,9 +1,9 @@
 ---
 name: dossier-spec
-description: The AGENTS.md per-repo dossier spec: required structure, Metadata contract, validation rules
+description: The dossier's declared-shape vocabulary -- AGENTS.md structure, the Metadata key contract (url, automerge.require_human, automerge.maintenance, landed.kind), and the two invariants (explicit opt-in with fail-fast on partial declarations; no unattended edits to the dossier itself)
 consumers: generic
-source: docs/agents-md-spec.md
-extracted: 2026-08-10
+source: docs/agents-md-spec.md + lib/automerge.sh, lib/landed.sh (igor)
+extracted: 2026-08-18
 ---
 
 # AGENTS.md dossier spec
@@ -19,6 +19,17 @@ markdown, prose for agents to read. This spec constrains it further so
 the file is also parseable, checkable, and uniform across the fleet.
 Validation enforces this spec; a repo whose dossier doesn't conform
 fails validation and drops out of the work pool, loudly.
+
+Beyond its own prose structure, the dossier is the harness's entire
+vocabulary for a repo's *shape* -- the declared facts that drive merge
+and post-merge verification behavior without the harness special-casing
+a repo by name. Four keys make up that declared vocabulary: `url`,
+`automerge.require_human`, `automerge.maintenance`, `landed.kind`. That
+is the spec-level shape -- which of them the harness already reads, and
+which are still hardcoded on its side, is the migration note near the
+end. Every one lives in the `## Metadata` block below, under the same
+two rules (see Declaration invariants): required-and-explicit on opt-in,
+and never editable through an unattended merge.
 
 ## Design principles
 
@@ -85,6 +96,9 @@ the harness can simply take the first one after the literal heading
 | --- | --- | --- |
 | `type` | yes | One of the closed type list below |
 | `url` | sites | Canonical live URL; enables auto-merge + deploy barrier (was `agent.json` `.smoke.url`); host must match the H1 |
+| `automerge.require_human` | no | Pins the repo to the human-approval merge gate instead of the shadow-review APPROVE default (was `agent.json` `.automerge.require_human`); a url-less repo is already human-gated unconditionally regardless of this flag, so declare it there only as the prerequisite for `automerge.maintenance`, never as decoration |
+| `automerge.maintenance` | no | Marks a `require_human` repo eligible for the maintenance-tier carve-out: an affirmative shadow APPROVE with no live human REQUEST_CHANGES may still merge a narrow, data-only diff without waiting on a human; meaningless without `automerge.require_human: true` alongside it (see Declaration invariants) |
+| `landed.kind` | no | For a url-less repo, which host-state check verifies a merge actually landed: `igor` (self-pull HEAD check) or `distillery` (served-cache generation-marker check); mutually exclusive with `url` (see Declaration invariants) |
 | `test` | see note | Command that runs the test suite |
 | `lint` | no | Command that runs the linter(s) |
 | `verify` | no | Command for end-to-end/visual verification (e.g. a Playwright script) |
@@ -103,6 +117,48 @@ site types and take no `url`. The type drives harness behavior
 expects), so a new value is a harness change, shipped together with
 it.
 
+`automerge.require_human` and `automerge.maintenance` are read by the
+merge gate; `landed.kind` by the post-merge host-state watch. Together
+with `url` they are the harness's entire declared vocabulary for a
+repo's merge shape. `landed.kind`'s closed vocabulary is exactly
+`igor` and `distillery` -- the two url-less repos the watch knows how
+to verify because they ARE the harness and this brain; no other
+url-less repo has a host-state check to attach to, declared or not.
+
+## Declaration invariants
+
+Two rules hold across every key in this vocabulary, not just the four
+above -- a key added later inherits them too:
+
+1. **Required-and-explicit on opt-in; no defaults, fail-fast on
+   partial.** A repo gets none of a behavior's mechanism until it
+   explicitly declares every key that behavior needs. There is no
+   silent inference from absence, and there is no partial credit:
+   `automerge.maintenance: true` without `automerge.require_human:
+   true` alongside it is not "maintenance tier with the human gate
+   implied" -- the maintenance carve-out exists only to loosen a
+   `require_human` pin, so declaring the loosening without the pin is
+   an incoherent declaration and validation fails it, loudly, rather
+   than guessing what the author meant. The rule keys on the key being
+   present at all, not on its value: `automerge.maintenance: false`
+   without the pin fails the same way, because the carve-out it opts
+   out of does not exist on that repo either. A repo that wants no
+   maintenance tier omits the key. Likewise `landed.kind` on a
+   repo that also declares `url` is a contradictory declaration -- the
+   landed watch exists only for repos with no live URL to smoke-check
+   instead -- and fails validation rather than one key silently
+   winning over the other.
+2. **Dossier files are never editable through any unattended merge
+   path.** `AGENTS.md` (and, during the migration window, `agent.json`)
+   sits on the shadow-only auto-merge path's risk-gate deny-list: a
+   diff touching either can never merge via the no-human-in-the-loop
+   path, full stop. A human-approved merge is not gated there (a human
+   already saw the diff), so a human can still edit the dossier; what
+   can never happen is a repo -- or an agent working in it -- extending
+   its own privileges (setting `automerge.require_human: false` on
+   itself, say) and having that PR ship unattended. The repo reads the
+   privileges the dossier grants it; it never grants them to itself.
+
 ## Validation contract
 
 `validate-repo` asserts, loudly and fail-fast, against the ROOT
@@ -120,6 +176,18 @@ see below):
   is exactly `(none yet)`.
 - Nested `AGENTS.md` files contain no `## Metadata` section (the
   root dossier is the only machine-readable one).
+- `automerge.maintenance` is present only alongside
+  `automerge.require_human: true` (Declaration invariant 1).
+- `landed.kind` is present only on a repo with no `url` key, and its
+  value is one of the closed set the watch recognizes (`igor`,
+  `distillery`) (Declaration invariant 1).
+
+Those last two bullets are target state, not current behavior.
+`automerge.maintenance` and `landed.kind` have no consumer yet (see
+Authoring and migration), so no validator rejects a bad declaration of
+either today; the checks land with the harness-side wiring that reads
+the keys, in the same change. Don't read them as a validator you can
+lean on right now.
 
 **Un-adopted vs nonconforming -- the migration gate:** a repo that
 has not adopted this spec validates under the legacy rules
@@ -174,6 +242,17 @@ only the thin dossier takes a trivial ticket end-to-end. If it
 fumbles, the dossier is missing something load-bearing -- find out
 which section was too thin before converting the next repo.
 
+`url` and `automerge.require_human` migrate the way every Metadata key
+does: each already has a legacy `agent.json` home (`.smoke.url`,
+`.automerge.require_human`) that the migration-window fallback reads
+until a repo declares the dossier form. `automerge.maintenance` and
+`landed.kind` have no such legacy home -- today they are hardcoded in
+the harness itself (the maintenance carve-out to one specific repo;
+`landed.kind` to a two-way name match), not read from any per-repo
+config. This spec is that vocabulary's first declared form; wiring the
+harness to read it instead of hardcoding it is consumer-side work
+tracked separately, out of scope here.
+
 ## Example
 
 ````markdown
@@ -207,5 +286,31 @@ type: arcade
 url: https://porksicle.com
 test: npm test
 feedback-csv: https://docs.google.com/spreadsheets/d/e/.../pub?output=csv
+```
+````
+
+A url-less repo declaring the merge-shape keys -- no `url`, so no
+deploy barrier; `landed.kind` stands in with the host-state watch
+instead. The pin is deliberately absent: a url-less repo is human-gated
+unconditionally, so `automerge.require_human` here would declare
+nothing. The only reason to write it would be as the prerequisite for
+`automerge.maintenance`, which this repo does not take.
+
+````markdown
+# distillery
+
+The context brain the harness reads its own vocabulary from. No live
+domain -- consumers pin a released proof, not this working tree.
+
+## KPIs
+
+(none yet)
+
+## Metadata
+
+```yaml
+type: infra
+test: make test
+landed.kind: distillery
 ```
 ````
