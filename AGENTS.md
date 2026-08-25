@@ -32,4 +32,5 @@ that consumers pin.
 ```yaml
 type: infra
 test: make test
+landed-kind: context-cache
 ```
