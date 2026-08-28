@@ -314,11 +314,34 @@ blocker helper with a clear explanation:
 agent-block.sh "$(cat <<'EOF'
 (what I tried, what went wrong, what I need from the human)
 EOF
-)"
+)" [<probe-kind> [<probe-ref>]]
 ```
 
 This posts a comment, applies `Status/Blocked`, and unassigns me.
 No commits. Exit after.
+
+The trailing `<probe-kind>`/`<probe-ref>` are optional but worth
+setting: they record a machine-checkable probe on the block so the
+ticket can clear itself once its cause resolves, instead of sitting
+as unchecked prose until a human rereads it. Closed vocabulary,
+three kinds:
+
+- `issue-open <owner/repo#N>` -- the block holds while that issue or
+  PR is open, and clears once it closes. Use this when I'm blocked
+  on something else landing ("blocked on X merging").
+- `pr-behind <owner/repo#N>` -- the block holds while that PR is
+  behind its base branch, and clears once it isn't. Use this for a
+  stale-base block.
+- `operator` -- no ref, never evaluated. Use this when the hold is a
+  human decision, not a condition I can name (e.g. "Josh needs to
+  pick an approach"). Don't attach `issue-open` or `pr-behind` to a
+  decision that's actually waiting on a person -- a probe that tests
+  the wrong condition is worse than an honest gap.
+
+Omitting both args is legal and reads as UNPROBED: reported
+honestly in the block comment, but never auto-cleared. Only omit
+them when the block is genuinely neither a mechanical dependency nor
+an operator decision.
 
 **When to block vs. try harder:**
 
