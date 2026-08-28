@@ -178,7 +178,8 @@ rm -rf "$R"
 echo "== still verify: a passing verify: command reports VERIFIED =="
 R=$(sandbox); skill_with_verify "$R" alpha "true"
 "$R/bin/still" verify >/dev/null 2>&1 && ok || bad "a passing verify: command failed the run"
-"$R/bin/still" verify 2>&1 | grep -q "alpha: VERIFIED" && ok || bad "a passing verify: command did not report VERIFIED"
+out=$("$R/bin/still" verify 2>&1 || true)
+grep -q "alpha: VERIFIED" <<<"$out" && ok || bad "a passing verify: command did not report VERIFIED"
 rm -rf "$R"
 
 echo "== still verify: a failing verify: command reports FAILED and the run exits 1 =="
@@ -191,7 +192,8 @@ rm -rf "$R"
 echo "== still verify: no verify: reports UNVERIFIED and does not fail the run =="
 R=$(sandbox); good_skill "$R" gamma
 "$R/bin/still" verify >/dev/null 2>&1 && ok || bad "a missing verify: key failed the run (should be UNVERIFIED, not fatal)"
-"$R/bin/still" verify 2>&1 | grep -q "gamma: UNVERIFIED" && ok || bad "a missing verify: key did not report UNVERIFIED"
+out=$("$R/bin/still" verify 2>&1 || true)
+grep -q "gamma: UNVERIFIED" <<<"$out" && ok || bad "a missing verify: key did not report UNVERIFIED"
 rm -rf "$R"
 
 echo "== still verify: summary line reports verified/unverified/failed counts =="
@@ -209,7 +211,8 @@ echo "== still verify negative test: sever the verify execution and the failing 
 R=$(sandbox); skill_with_verify "$R" failer "false"
 sed -i 's/bash -c "\$cmd"/true/' "$R/bin/still"
 "$R/bin/still" verify >/dev/null 2>&1 && ok || bad "severing verify execution wrongly failed the run"
-"$R/bin/still" verify 2>&1 | grep -q "failer: VERIFIED" && ok || bad "severing verify execution did not wrongly pass the failing skill -- the gate isn't what's catching it"
+out=$("$R/bin/still" verify 2>&1 || true)
+grep -q "failer: VERIFIED" <<<"$out" && ok || bad "severing verify execution did not wrongly pass the failing skill -- the gate isn't what's catching it"
 rm -rf "$R"
 
 echo "== the real tree validates =="

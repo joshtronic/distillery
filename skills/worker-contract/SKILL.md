@@ -314,17 +314,26 @@ blocker helper with a clear explanation:
 agent-block.sh "$(cat <<'EOF'
 (what I tried, what went wrong, what I need from the human)
 EOF
-)" [<probe-kind> [<probe-ref>]]
+)"
 ```
 
 This posts a comment, applies `Status/Blocked`, and unassigns me.
 No commits. Exit after.
 
-The trailing `<probe-kind>`/`<probe-ref>` are optional but worth
-setting: they record a machine-checkable probe on the block so the
-ticket can clear itself once its cause resolves, instead of sitting
-as unchecked prose until a human rereads it. Closed vocabulary,
-three kinds:
+`agent-block.sh` takes two more positional args after the comment: a
+probe kind, and a ref for the kinds that take one.
+
+```sh
+agent-block.sh "$(cat <<'EOF'
+Blocked on the shared helper landing in joshtronic/igor#549.
+EOF
+)" issue-open joshtronic/igor#549
+```
+
+Both are optional but worth setting: they record a
+machine-checkable probe on the block so the ticket can clear itself
+once its cause resolves, instead of sitting as unchecked prose until
+a human rereads it. Closed vocabulary, three kinds:
 
 - `issue-open <owner/repo#N>` -- the block holds while that issue or
   PR is open, and clears once it closes. Use this when I'm blocked
@@ -339,9 +348,11 @@ three kinds:
   the wrong condition is worse than an honest gap.
 
 Omitting both args is legal and reads as UNPROBED: reported
-honestly in the block comment, but never auto-cleared. Only omit
-them when the block is genuinely neither a mechanical dependency nor
-an operator decision.
+honestly in the block comment, but never auto-cleared. The case
+that earns a bare block is an environmental hold with nothing to
+point at -- a runner out of disk, an upstream service down, a
+toolchain that won't install. Anything waiting on a person is
+`operator`, not a bare block.
 
 **When to block vs. try harder:**
 
