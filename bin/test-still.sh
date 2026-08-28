@@ -49,6 +49,22 @@ Body content.
 EOF
 }
 
+skill_with_verify() { # root name verify_cmd
+  mkdir -p "$1/skills/$2"
+  cat > "$1/skills/$2/SKILL.md" <<EOF
+---
+name: $2
+description: a valid test skill
+consumers: generic
+source: test
+extracted: 2026-08-10
+verify: $3
+---
+
+Body content.
+EOF
+}
+
 readme_with_markers() { # root
   cat > "$1/README.md" <<'EOF'
 # test repo
@@ -159,8 +175,48 @@ grep -qF -- '[alpha](skills/alpha/SKILL.md) — a valid test skill' "$R/dist/ind
 grep -qF -- '[beta](skills/beta/SKILL.md) — a valid test skill' "$R/dist/index.md" && ok || bad "dist/index.md missing the beta entry"
 rm -rf "$R"
 
+echo "== still verify: a passing verify: command reports VERIFIED =="
+R=$(sandbox); skill_with_verify "$R" alpha "true"
+"$R/bin/still" verify >/dev/null 2>&1 && ok || bad "a passing verify: command failed the run"
+"$R/bin/still" verify 2>&1 | grep -q "alpha: VERIFIED" && ok || bad "a passing verify: command did not report VERIFIED"
+rm -rf "$R"
+
+echo "== still verify: a failing verify: command reports FAILED and the run exits 1 =="
+R=$(sandbox); skill_with_verify "$R" beta "false"
+"$R/bin/still" verify >/dev/null 2>&1 && bad "a failing verify: command did not fail the run" || ok
+out=$("$R/bin/still" verify 2>&1 || true)
+grep -q "beta: FAILED" <<<"$out" && ok || bad "a failing verify: command did not report FAILED"
+rm -rf "$R"
+
+echo "== still verify: no verify: reports UNVERIFIED and does not fail the run =="
+R=$(sandbox); good_skill "$R" gamma
+"$R/bin/still" verify >/dev/null 2>&1 && ok || bad "a missing verify: key failed the run (should be UNVERIFIED, not fatal)"
+"$R/bin/still" verify 2>&1 | grep -q "gamma: UNVERIFIED" && ok || bad "a missing verify: key did not report UNVERIFIED"
+rm -rf "$R"
+
+echo "== still verify: summary line reports verified/unverified/failed counts =="
+R=$(sandbox); skill_with_verify "$R" alpha "true"; skill_with_verify "$R" beta "false"; good_skill "$R" gamma
+out=$("$R/bin/still" verify 2>&1 || true)
+grep -q "1 verified, 1 unverified, 1 failed" <<<"$out" && ok || bad "summary line missing or wrong counts"
+rm -rf "$R"
+
+echo "== a verify: key does not break still validate (optional key, not unknown key) =="
+R=$(sandbox); skill_with_verify "$R" alpha "true"
+"$R/bin/still" validate >/dev/null 2>&1 && ok || bad "a verify: key was rejected as an unknown frontmatter key"
+rm -rf "$R"
+
+echo "== still verify negative test: sever the verify execution and the failing skill wrongly reports VERIFIED =="
+R=$(sandbox); skill_with_verify "$R" failer "false"
+sed -i 's/bash -c "\$cmd"/true/' "$R/bin/still"
+"$R/bin/still" verify >/dev/null 2>&1 && ok || bad "severing verify execution wrongly failed the run"
+"$R/bin/still" verify 2>&1 | grep -q "failer: VERIFIED" && ok || bad "severing verify execution did not wrongly pass the failing skill -- the gate isn't what's catching it"
+rm -rf "$R"
+
 echo "== the real tree validates =="
 "$STILL" validate >/dev/null 2>&1 && ok || bad "the repo's own skills tree does not validate"
+
+echo "== the real tree's verify run exits 0 (no verify: commands adopted yet -- honestly all UNVERIFIED) =="
+"$STILL" verify >/dev/null 2>&1 && ok || bad "the repo's own skills tree fails still verify"
 
 echo "== the real tree's shelf listing is current =="
 "$STILL" index --check >/dev/null 2>&1 && ok || bad "the repo's own README shelf listing is stale -- run 'bin/still index'"

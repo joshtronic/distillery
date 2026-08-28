@@ -2,6 +2,8 @@
 # bin/still -- the distillery's assembler.
 #
 #   still validate           check every skill against the format contract
+#   still verify              run each skill's optional `verify:` command --
+#                             a semantic gate on top of validate's shape gate
 #   still build              validate, then write dist/manifest.json + dist/index.md
 #   still list               one line per skill (name -- description)
 #   still index              render the README shelf block from frontmatter
@@ -12,6 +14,9 @@
 #   `key: value` lines containing name (== <dir>), description (nonempty),
 #   consumers (from the closed list below), source, extracted -- and a
 #   nonempty body after the closing delimiter. Unknown frontmatter keys fail.
+#   `verify` is an optional frontmatter key (present-or-absent, not
+#   required): a shell command `still verify` runs from the skill's own
+#   directory to check the skill's claims are still true, not just its shape.
 #   Extra files ride in skills/<dir>/files/ and are listed in the manifest.
 set -euo pipefail
 
@@ -21,6 +26,7 @@ DIST_DIR="$ROOT/dist"
 README="$ROOT/README.md"
 
 FRONTMATTER_KEYS="name description consumers source extracted"
+OPTIONAL_FRONTMATTER_KEYS="verify"
 CONSUMERS_VOCAB="igor-surface generic"
 
 SHELF_START='<!-- shelf:start -->'
@@ -55,11 +61,17 @@ validate_skill() {
     v=$(fm_get "$fm" "$k") || { echo "$name: frontmatter missing '$k'"; return 1; }
     [ -n "$v" ] || { echo "$name: frontmatter '$k' is empty"; return 1; }
   done
+  # optional keys: present-or-absent, but nonempty when present
+  for k in $OPTIONAL_FRONTMATTER_KEYS; do
+    if v=$(fm_get "$fm" "$k"); then
+      [ -n "$v" ] || { echo "$name: frontmatter '$k' is empty"; return 1; }
+    fi
+  done
   # no unknown keys
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     k="${line%%:*}"
-    grep -qw "$k" <<<"$FRONTMATTER_KEYS" || { echo "$name: unknown frontmatter key '$k'"; return 1; }
+    grep -qw "$k" <<<"$FRONTMATTER_KEYS $OPTIONAL_FRONTMATTER_KEYS" || { echo "$name: unknown frontmatter key '$k'"; return 1; }
   done <<<"$fm"
   # name matches directory
   [ "$(fm_get "$fm" name)" = "$name" ] || { echo "$name: frontmatter name '$(fm_get "$fm" name)' != directory name"; return 1; }
@@ -82,6 +94,40 @@ cmd_validate() {
   done
   [ "$rc" -eq 0 ] && echo "still: all skills valid"
   return "$rc"
+}
+
+# verify_skill <dir> -- run a skill's optional `verify:` command from the
+# skill's own directory. Prints one status line and returns 0/1/2 for
+# VERIFIED/FAILED/UNVERIFIED so the caller can tell "no check" from "a check
+# that failed" -- an honest gap must never look like a pass.
+verify_skill() {
+  local dir="$1" name f fm cmd
+  name="$(basename "$dir")"
+  f="$dir/SKILL.md"
+  fm=$(frontmatter "$f") || { echo "$name: UNVERIFIED (no frontmatter)"; return 2; }
+  cmd=$(fm_get "$fm" verify) || { echo "$name: UNVERIFIED (no verify command)"; return 2; }
+  if ( cd "$dir" && bash -c "$cmd" ) >/dev/null 2>&1; then
+    echo "$name: VERIFIED"
+    return 0
+  fi
+  echo "$name: FAILED"
+  return 1
+}
+
+cmd_verify() {
+  local d rc verified=0 unverified=0 failed=0
+  [ -d "$SKILLS_DIR" ] || fail "no skills/ directory"
+  for d in "$SKILLS_DIR"/*/; do
+    [ -d "$d" ] || continue
+    if verify_skill "${d%/}"; then
+      verified=$((verified+1))
+    else
+      rc=$?
+      if [ "$rc" -eq 1 ]; then failed=$((failed+1)); else unverified=$((unverified+1)); fi
+    fi
+  done
+  echo "still: $verified verified, $unverified unverified, $failed failed"
+  [ "$failed" -eq 0 ]
 }
 
 # shelf_entries -- one "name<TAB>description" line per skill, sorted by name.
@@ -250,8 +296,9 @@ cmd_list() {
 
 case "${1:-}" in
   validate) cmd_validate ;;
+  verify)   cmd_verify ;;
   build)    cmd_build ;;
   list)     cmd_list ;;
   index)    cmd_index "${2:-}" ;;
-  *) fail "usage: still validate|build|list|index [--check]" ;;
+  *) fail "usage: still validate|verify|build|list|index [--check]" ;;
 esac
