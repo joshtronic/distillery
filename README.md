@@ -42,7 +42,7 @@ Generated from each skill's `description` frontmatter by `bin/still index`;
 - **ai-writing-tells** — Catalog of AI writing tells to avoid in any prose surface
 - **coding-standards** — Use when writing or reviewing any code change. The coding-output contract -- minimal touch, the two-variety comment rule, TDD with red-tested validation, honest verification claims.
 - **design** — Use when doing visual or UX work on a site -- new UI, redesigns, reskins, or design review. Distinctive-per-subject direction with content preservation and verification-by-screenshot.
-- **doctrine** — The operator's hard-won engineering doctrine for agentic systems -- amnesia, deterministic gates, mechanism over prose, red-tested validation, pre-mortems
+- **doctrine** — The operator's hard-won engineering doctrine for agentic systems -- amnesia, deterministic gates, mechanism over prose, red-tested validation, pre-mortems, evidence over claims, guard severance
 - **dossier-spec** — The dossier's declared-shape vocabulary -- AGENTS.md structure, the Metadata key contract (url, automerge.require_human, automerge.maintenance, landed.kind), and the two invariants (explicit opt-in with fail-fast on partial declarations; no unattended edits to the dossier itself)
 - **feedback-directive** — Player-feedback triage directive: DROP/FILE decision contract over untrusted CSV rows
 - **now-directive** — Weekly /now page refresh directive

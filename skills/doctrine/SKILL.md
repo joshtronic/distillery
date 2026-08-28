@@ -1,6 +1,6 @@
 ---
 name: doctrine
-description: The operator's hard-won engineering doctrine for agentic systems -- amnesia, deterministic gates, mechanism over prose, red-tested validation, pre-mortems
+description: The operator's hard-won engineering doctrine for agentic systems -- amnesia, deterministic gates, mechanism over prose, red-tested validation, pre-mortems, evidence over claims, guard severance
 consumers: generic
 source: operator (lessons learned, 2026-08-10)
 extracted: 2026-08-10
@@ -38,6 +38,22 @@ harness surface, a working agent, or a human speccing work.
   scenario where one failing item wedges the whole cascade is a design bug,
   not an operational annoyance.
 
+## Evidence
+
+- **A claim is not evidence.** "It's fixed," "it's live," "tests pass" is a
+  report; the passing run, the production probe, the diff is the evidence.
+  Before advancing state on a report, go get the artifact it describes.
+- **Measure the executing surface, not a proxy.** A version string, a merge
+  event, a green badge stands in for the code that runs. Check the bytes
+  that actually execute, not a stand-in for them.
+- **Check the cure's state, not its existence.** A fix can exist as an
+  inert artifact -- a draft PR, an unmerged branch, an undeployed commit --
+  while the defect keeps reproducing. Confirm the fix is in force, not
+  merely that it exists somewhere.
+- **The signal is not the subject.** Before trusting a probe, ask: would it
+  report the same result regardless of the subject's real state? If yes, it
+  measures nothing -- fix the probe or stop citing it.
+
 ## Validation
 
 - **Deterministic validation runs before any LLM sees the work.** Cheap
@@ -52,6 +68,12 @@ harness surface, a working agent, or a human speccing work.
 - **Red-test your validation before trusting it.** TDD applies to guards
   too: deliberately break the thing, watch the check fail, then fix it. A
   validator that has never failed has never been tested.
+- **A green check is evidence only if it can go red -- and that applies to
+  every gate a harness runs, not just this repo's own validator.** Sever
+  the subject and confirm the gate refuses to pass: a CI check, a lint
+  rule, an exclusion list. A gate that still passes when you remove the
+  thing it asserts on is theater; an individually-justified exclusion is
+  still an unguarded gap unless the sever-and-fail check runs on it too.
 - **A green test is not necessarily a healthy test.** Major refactors
   restart scrutiny on the tests around them. At worst, re-break a test that
   hasn't failed in a while and confirm it still can.
