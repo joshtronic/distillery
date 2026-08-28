@@ -24,8 +24,11 @@ _I don't monitor these services or accept pull/merge requests on them._
   (name, description, consumers, source, extracted) followed by the content.
   Extra files ride in `skills/<name>/files/`.
 - **`bin/still`** -- the assembler. `still validate` enforces the format
-  contract deterministically; `still build` refuses to ship anything
-  unvalidated and writes `dist/manifest.json`; `still list` shows the shelf.
+  contract deterministically; `still verify` runs each skill's optional
+  `verify:` command as a semantic gate on top of that -- VERIFIED, FAILED,
+  or honestly UNVERIFIED when a skill has no check yet; `still build`
+  refuses to ship anything unvalidated and writes `dist/manifest.json`;
+  `still list` shows the shelf.
 - **Proofs** -- versioned releases consumers pin. Consumers never read the
   working tree; between proofs the tree is a draft.
 

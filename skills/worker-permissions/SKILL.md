@@ -1,7 +1,7 @@
 ---
 name: worker-permissions
 description: The unattended worker's tool permission profile (Claude Code settings) -- broad dev capability, denied network git / secrets / harness internals
-consumers: igor-surface
+consumers: generic
 source: agent-settings.json
 extracted: 2026-08-10
 ---
