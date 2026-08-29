@@ -175,6 +175,37 @@ grep -qF -- '[alpha](skills/alpha/SKILL.md) — a valid test skill' "$R/dist/ind
 grep -qF -- '[beta](skills/beta/SKILL.md) — a valid test skill' "$R/dist/index.md" && ok || bad "dist/index.md missing the beta entry"
 rm -rf "$R"
 
+echo "== still build --check: exits 0 when current, nonzero when the manifest has drifted =="
+R=$(sandbox); good_skill "$R" alpha; good_skill "$R" beta
+"$R/bin/still" build >/dev/null 2>&1
+"$R/bin/still" build --check >/dev/null 2>&1 && ok || bad "--check failed on a freshly built manifest"
+# a skill edited since the manifest was last built, without regenerating
+sed -i 's/^description:.*/description: a changed test skill/' "$R/skills/alpha/SKILL.md"
+"$R/bin/still" build --check >/dev/null 2>&1 && bad "--check passed with an edited-but-unregenerated skill" || ok
+"$R/bin/still" build >/dev/null 2>&1
+"$R/bin/still" build --check >/dev/null 2>&1 && ok || bad "--check failed after the manifest was regenerated"
+rm -rf "$R"
+
+echo "== still build --check: fails when dist/manifest.json is missing =="
+R=$(sandbox); good_skill "$R" alpha
+"$R/bin/still" build --check >/dev/null 2>&1 && bad "--check passed with no committed manifest" || ok
+rm -rf "$R"
+
+echo "== still build: manifest carries every skill in skills/, and no extras =="
+R=$(sandbox); good_skill "$R" alpha; good_skill "$R" beta; good_skill "$R" gamma
+"$R/bin/still" build >/dev/null 2>&1
+names=$(jq -r '.skills[].name' "$R/dist/manifest.json" | sort)
+[ "$names" = "$(printf 'alpha\nbeta\ngamma')" ] && ok || bad "manifest skill list doesn't match skills/ exactly"
+rm -rf "$R"
+
+echo "== still build --check negative test: sever the drift comparison and the edited-without-regeneration case wrongly passes =="
+R=$(sandbox); good_skill "$R" alpha
+"$R/bin/still" build >/dev/null 2>&1
+sed -i 's/^description:.*/description: a changed test skill/' "$R/skills/alpha/SKILL.md"
+sed -i 's/\[ "\$committed" = "\$fresh" \]/true/' "$R/bin/still"
+"$R/bin/still" build --check >/dev/null 2>&1 && ok || bad "severing the drift comparison wrongly failed the run -- the edited-but-unregenerated skill should have wrongly passed"
+rm -rf "$R"
+
 echo "== still verify: a passing verify: command reports VERIFIED =="
 R=$(sandbox); skill_with_verify "$R" alpha "true"
 "$R/bin/still" verify >/dev/null 2>&1 && ok || bad "a passing verify: command failed the run"
@@ -223,6 +254,9 @@ echo "== the real tree's verify run exits 0 (no verify: commands adopted yet -- 
 
 echo "== the real tree's shelf listing is current =="
 "$STILL" index --check >/dev/null 2>&1 && ok || bad "the repo's own README shelf listing is stale -- run 'bin/still index'"
+
+echo "== the real tree's manifest is current =="
+"$STILL" build --check >/dev/null 2>&1 && ok || bad "the repo's own dist/manifest.json is stale -- run 'bin/still build' and commit the result"
 
 echo "test-still: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
