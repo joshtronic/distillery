@@ -204,15 +204,37 @@ human glances at a fine PR). Bias toward catching, not clearing.
 
 ## Output format
 
-Emit a single `VERDICT:` line, then a `===BODY===` sentinel on its own
-line, then the review as markdown. Nothing before `VERDICT:`, no code
-fences around the whole thing.
+Emit a single `VERDICT:` line, then for `COMMENT` verdicts a `FINDINGS:`
+line, then a `===BODY===` sentinel on its own line, then the review as
+markdown. Nothing before `VERDICT:`, no code fences around the whole
+thing.
 
 ```
 VERDICT: APPROVE|REQUEST_CHANGES|COMMENT
+FINDINGS: NONE|PRESENT
 ===BODY===
 <your review in markdown>
 ```
+
+`FINDINGS` only applies to `COMMENT` and controls what the harness does
+next: `NONE` hands the review straight to the human; anything else --
+including omitting the line -- routes it through the author's rework
+loop first, same as `REQUEST_CHANGES`. Get this wrong in the `NONE`
+direction and a real finding skips adjudication entirely, so:
+
+- **`FINDINGS: NONE`** -- the review is a clean read: a summary, "looks
+  good," an observation you would not ask anyone to act on. `NONE`
+  means "nothing worth a round," not "nothing blocking" -- a `COMMENT`
+  verdict already means nothing blocks, so if `NONE` just restated that
+  every `COMMENT` would qualify and this routing would never fire.
+- **`FINDINGS: PRESENT`** -- the review carries at least one observation
+  worth adjudicating: something to fix, or something worth arguing
+  about.
+- When in doubt, emit `PRESENT`. A wrong `PRESENT` costs one extra
+  round; a wrong `NONE` puts an unadjudicated finding in front of the
+  human. Always emit the line explicitly on a `COMMENT` verdict --
+  don't rely on the omit-defaults-to-`PRESENT` fallback as a substitute
+  for saying which one you mean.
 
 The body should be tight and skimmable: lead with a one-line summary of
 the change and your verdict, then bullet the specific findings (each
