@@ -2,7 +2,7 @@
 name: dossier-spec
 description: The dossier's declared-shape vocabulary -- AGENTS.md structure, the Metadata key contract (url, automerge.require_human, automerge.maintenance, landed.kind), and the two invariants (explicit opt-in with fail-fast on partial declarations; no unattended edits to the dossier itself)
 consumers: generic
-source: docs/agents-md-spec.md + lib/automerge.sh, lib/landed.sh (igor)
+source: docs/agents-md-spec.md + lib/automerge.sh, lib/landed.sh (this fleet's harness repo)
 extracted: 2026-08-18
 ---
 
@@ -55,8 +55,9 @@ validation matches them literally.
 
 1. **H1 + description** (required). The H1 is the project's canonical
    name: the `url` host for sites (`# porksicle.com`), the repo name
-   otherwise (`# igor`). A site served from a subdomain uses that
-   subdomain; the validation rule below is the definition. The
+   otherwise (e.g. `# widget-factory` for a non-site repo). A site
+   served from a subdomain uses that subdomain; the validation rule
+   below is the definition. The
    paragraph(s) under it must answer two questions: what this project
    is, and who it is for.
 2. **`## KPIs`** (required). Either an ordered list -- priority
@@ -120,10 +121,11 @@ it.
 `automerge.require_human` and `automerge.maintenance` are read by the
 merge gate; `landed.kind` by the post-merge host-state watch. Together
 with `url` they are the harness's entire declared vocabulary for a
-repo's merge shape. `landed.kind`'s closed vocabulary is exactly
-`igor` and `distillery` -- the two url-less repos the watch knows how
-to verify because they ARE the harness and this brain; no other
-url-less repo has a host-state check to attach to, declared or not.
+repo's merge shape. `landed.kind`'s closed vocabulary is whichever
+url-less repos a given fleet's watch knows how to host-state-check --
+for this fleet, exactly `igor` and `distillery`, its own harness and
+context brain. A url-less repo outside a fleet's declared set has no
+host-state check to attach to, declared or not.
 
 ## Declaration invariants
 
