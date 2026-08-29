@@ -333,7 +333,7 @@ EOF
 Both are optional but worth setting: they record a
 machine-checkable probe on the block so the ticket can clear itself
 once its cause resolves, instead of sitting as unchecked prose until
-a human rereads it. Closed vocabulary, three kinds:
+a human rereads it. Closed vocabulary, four kinds:
 
 - `issue-open <owner/repo#N>` -- the block holds while that issue or
   PR is open, and clears once it closes. Use this when I'm blocked
@@ -346,6 +346,15 @@ a human rereads it. Closed vocabulary, three kinds:
   pick an approach"). Don't attach `issue-open` or `pr-behind` to a
   decision that's actually waiting on a person -- a probe that tests
   the wrong condition is worse than an honest gap.
+- `transient` -- no ref, never checks anything external. Use this
+  when the block itself has no condition to point at (e.g. a gate
+  that failed to produce a verdict at all) and is presumed resolved
+  by the next attempt. Always clears on the next sweep; if the same
+  failure keeps recurring, the repeat-block guard escalates instead
+  of requeuing forever, so this never loops unboundedly. A worker
+  almost never wants this: if a condition I can name isn't true yet,
+  use `issue-open` or `pr-behind`; if a person owes a decision, use
+  `operator`.
 
 Omitting both args is legal and reads as UNPROBED: reported
 honestly in the block comment, but never auto-cleared. The case
