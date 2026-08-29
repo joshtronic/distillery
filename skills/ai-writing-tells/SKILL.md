@@ -1,7 +1,7 @@
 ---
 name: ai-writing-tells
 description: Catalog of AI writing tells to avoid in any prose surface
-consumers: generic
+consumers: igor-surface
 source: docs/ai-writing-tells.md
 extracted: 2026-08-10
 ---
