@@ -29,6 +29,13 @@ _I don't monitor these services or accept pull/merge requests on them._
   or honestly UNVERIFIED when a skill has no check yet; `still build`
   refuses to ship anything unvalidated and writes `dist/manifest.json`;
   `still list` shows the shelf.
+- **`dist/manifest.json`** -- a committed, generated artifact (the rest of
+  `dist/` stays gitignored). A consumer verifies each poured skill's
+  `sha256` against this file read at a ref, so it must exist on that ref --
+  regenerating it from the checkout being verified would prove nothing.
+  Regenerate it with `bin/still build` whenever a skill changes, and commit
+  the result; `bin/still build --check` fails CI if the committed copy has
+  drifted from the tree.
 - **Proofs** -- versioned releases consumers pin. Consumers never read the
   working tree; between proofs the tree is a draft.
 

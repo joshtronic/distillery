@@ -5,6 +5,7 @@
 #   still verify              run each skill's optional `verify:` command --
 #                             a semantic gate on top of validate's shape gate
 #   still build              validate, then write dist/manifest.json + dist/index.md
+#   still build --check      fail if the committed manifest has drifted from the tree
 #   still list               one line per skill (name -- description)
 #   still index              render the README shelf block from frontmatter
 #   still index --check      fail if the committed shelf block has drifted
@@ -260,9 +261,9 @@ cmd_index() {
   esac
 }
 
-cmd_build() {
-  cmd_validate >/dev/null || fail "validation failed -- nothing ships unvalidated"
-  mkdir -p "$DIST_DIR"
+# render_manifest_json -- the dist/manifest.json content: one entry per
+# validated skill, ordered by directory glob order (lexicographic, stable).
+render_manifest_json() {
   local d name fm entries="" files sha
   for d in "$SKILLS_DIR"/*/; do
     [ -d "$d" ] || continue
@@ -279,10 +280,38 @@ cmd_build() {
       --argjson files "$files" \
       '{name:$name, description:$desc, consumers:($consumers|split(",")|map(gsub("^ +| +$";""))), path:$path, sha256:$sha, files:$files}')$'\n'
   done
-  jq -sc '{skills: ., built_from: "still build"}' <<<"$entries" > "$DIST_DIR/manifest.json"
-  render_index_md > "$DIST_DIR/index.md"
-  echo "still: built $DIST_DIR/manifest.json ($(jq '.skills | length' "$DIST_DIR/manifest.json") skills)"
-  echo "still: built $DIST_DIR/index.md"
+  jq -sc '{skills: ., built_from: "still build"}' <<<"$entries"
+}
+
+# check_manifest -- fail if the committed dist/manifest.json differs from a
+# fresh render off the current tree. Same shape as check_shelf_block: compare
+# in memory, never trust a manifest generated from the checkout it verifies.
+check_manifest() {
+  [ -f "$DIST_DIR/manifest.json" ] || fail "build --check: $DIST_DIR/manifest.json not found -- run 'still build' and commit it"
+  local committed fresh
+  committed=$(cat "$DIST_DIR/manifest.json")
+  fresh=$(render_manifest_json)
+  if [ "$committed" = "$fresh" ]; then
+    echo "still: manifest is current"
+    return 0
+  fi
+  echo "still: dist/manifest.json is stale -- run 'still build' and commit the result" >&2
+  return 1
+}
+
+cmd_build() {
+  cmd_validate >/dev/null || fail "validation failed -- nothing ships unvalidated"
+  case "${1:-}" in
+    --check) check_manifest ;;
+    "")
+      mkdir -p "$DIST_DIR"
+      render_manifest_json > "$DIST_DIR/manifest.json"
+      render_index_md > "$DIST_DIR/index.md"
+      echo "still: built $DIST_DIR/manifest.json ($(jq '.skills | length' "$DIST_DIR/manifest.json") skills)"
+      echo "still: built $DIST_DIR/index.md"
+      ;;
+    *) fail "usage: still build [--check]" ;;
+  esac
 }
 
 cmd_list() {
@@ -297,8 +326,8 @@ cmd_list() {
 case "${1:-}" in
   validate) cmd_validate ;;
   verify)   cmd_verify ;;
-  build)    cmd_build ;;
+  build)    cmd_build "${2:-}" ;;
   list)     cmd_list ;;
   index)    cmd_index "${2:-}" ;;
-  *) fail "usage: still validate|verify|build|list|index [--check]" ;;
+  *) fail "usage: still validate|verify|build [--check]|list|index [--check]" ;;
 esac
