@@ -17,8 +17,8 @@ read commits directly off `origin/master`.
   unvalidated; the deterministic gate IS the product's quality bar.
 - DO keep extracted skills verbatim-faithful to their source at extraction
   time -- improvements are their own commits, never smuggled into a move.
-- DON'T assume a release exists to pin -- none has been cut yet; consumers
-  currently read `origin/master` directly.
+- DON'T let consumers read this repo's working tree -- they read
+  `origin/master`; no release is cut yet to pin instead.
 
 ## Caveats
 

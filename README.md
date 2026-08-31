@@ -36,8 +36,8 @@ _I don't monitor these services or accept pull/merge requests on them._
   Regenerate it with `bin/still build` whenever a skill changes, and commit
   the result; `bin/still build --check` fails CI if the committed copy has
   drifted from the tree.
-- **Releases** -- not cut yet. Consumers currently read commits directly
-  off `origin/master`.
+- **Releases** -- not cut yet. Consumers read commits directly off
+  `origin/master`, never a working tree.
 
 ## The shelf
 
