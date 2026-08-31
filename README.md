@@ -36,8 +36,8 @@ _I don't monitor these services or accept pull/merge requests on them._
   Regenerate it with `bin/still build` whenever a skill changes, and commit
   the result; `bin/still build --check` fails CI if the committed copy has
   drifted from the tree.
-- **Proofs** -- versioned releases consumers pin. Consumers never read the
-  working tree; between proofs the tree is a draft.
+- **Releases** -- not cut yet. Consumers currently read commits directly
+  off `origin/master`.
 
 ## The shelf
 
@@ -65,10 +65,11 @@ Generated from each skill's `description` frontmatter by `bin/still index`;
 
 ## Consuming
 
-Pin a proof, read `dist/manifest.json`, take the skills whose `consumers`
-list matches your surface (`igor-surface` for harness prompt fragments,
-`generic` for anything). Wiring igor to consume proofs instead of its own
-copies is tracked on igor's side.
+No release is cut yet -- consumers currently read `origin/master` directly.
+Once one exists, read `dist/manifest.json` at that ref and take the skills
+whose `consumers` list matches your surface (`igor-surface` for harness
+prompt fragments, `generic` for anything). Wiring igor to consume a
+release instead of its own copies is tracked on igor's side.
 
 ## Testing
 
