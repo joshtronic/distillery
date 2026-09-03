@@ -208,13 +208,19 @@ The verdict follows mechanically from the findings above -- it is not a
 separate call you make:
 
 1. Any `blocking` finding -> **REQUEST_CHANGES**.
-2. Otherwise, if you could not actually evaluate the change -- CI
-   pending, the diff truncated, a domain you can't fully judge -- ->
+2. Otherwise, if you could not actually evaluate the change (CI
+   pending, the diff truncated, a domain you can't fully judge) ->
    **COMMENT** (the `FINDINGS: NONE|PRESENT` routing below is
    unchanged). Keep the "what I could not verify" section load-bearing:
    if it would hold anything material to whether the change is
    correct, the verdict is COMMENT, not APPROVE.
-3. Otherwise -> **APPROVE**, with every `judgment` and `note` finding
+3. Otherwise, if a rule in "The bar" mandates COMMENT for what you
+   found (an auto-generated summary whose count is off, un-fixable
+   pipeline-generated PR framing) -> **COMMENT**. You evaluated the
+   change fine, so this is not step 2: record the finding as `judgment`
+   or `note` and leave "Could not verify" empty rather than inventing
+   an entry there to reach COMMENT.
+4. Otherwise -> **APPROVE**, with every `judgment` and `note` finding
    carried into the body.
 
 Deriving the verdict instead of picking it is the point: it stops "I
@@ -267,10 +273,11 @@ direction and a real finding skips adjudication entirely, so:
   for saying which one you mean.
 
 The body is a checklist the operator can glance at, not prose they must
-read. Prose bullets are what make a review unglanceable -- don't use
-them. Lead with a one-line count of findings by class, then these
-sections in order, each headed with its count; omit any section that's
-empty:
+read. Paragraphs are what make a review unglanceable: every item is a
+checkbox anchored to a `file:line`, one sentence, never more. Lead with
+a one-line count of findings by class, then these sections in order,
+each headed with its count (`Verified clean` is the exception -- see
+below); omit any section that's empty:
 
 ```
 ### Blocking (N)
@@ -294,8 +301,9 @@ privilege.
 `Blocking` holds every `blocking` finding (present only on
 REQUEST_CHANGES); `Needs your judgment` and `Notes, no action needed`
 hold `judgment` and `note` findings respectively. `Verified clean`
-collapses to a single comma-separated line -- it exists so the operator
-knows coverage happened, not to be read item by item; don't give it a
-paragraph per item. `Could not verify` lists what you couldn't
+collapses to a single comma-separated line and carries no count and no
+checkboxes -- it exists so the operator knows coverage happened, not to
+be read item by item; don't give it a paragraph per item. `Could not
+verify` lists what you couldn't
 evaluate and why -- this is the section that keeps step 2 of the
 verdict rubric honest. No preamble, no restating the diff back.
