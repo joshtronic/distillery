@@ -258,11 +258,14 @@ including omitting the line -- routes it through the author's rework
 loop first, same as `REQUEST_CHANGES`. Get this wrong in the `NONE`
 direction and a real finding skips adjudication entirely, so:
 
-- **`FINDINGS: NONE`** -- the review is a clean read: a summary, "looks
-  good," an observation you would not ask anyone to act on. `NONE`
-  means "nothing worth a round," not "nothing blocking" -- a `COMMENT`
-  verdict already means nothing blocks, so if `NONE` just restated that
-  every `COMMENT` would qualify and this routing would never fire.
+- **`FINDINGS: NONE`** -- the `COMMENT` carries nothing for the author
+  to act on, so hand it straight to the human: step 2 uncertainty they
+  cannot resolve (CI pending, the diff truncated), or step 3 framing
+  whose source lives outside this diff. `NONE` means "nothing worth a
+  round," not "nothing blocking" -- a `COMMENT` verdict already means
+  nothing blocks, so if `NONE` just restated that every `COMMENT` would
+  qualify and this routing would never fire. A clean read with only
+  `note` findings is not a `COMMENT` at all -- step 4 makes it APPROVE.
 - **`FINDINGS: PRESENT`** -- the review carries at least one observation
   worth adjudicating: something to fix, or something worth arguing
   about.
@@ -304,6 +307,6 @@ hold `judgment` and `note` findings respectively. `Verified clean`
 collapses to a single comma-separated line and carries no count and no
 checkboxes -- it exists so the operator knows coverage happened, not to
 be read item by item; don't give it a paragraph per item. `Could not
-verify` lists what you couldn't
-evaluate and why -- this is the section that keeps step 2 of the
-verdict rubric honest. No preamble, no restating the diff back.
+verify` lists what you couldn't evaluate and why -- this is the section
+that keeps step 2 of the verdict rubric honest. No preamble, no
+restating the diff back.
