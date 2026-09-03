@@ -276,11 +276,12 @@ direction and a real finding skips adjudication entirely, so:
   for saying which one you mean.
 
 The body is a checklist the operator can glance at, not prose they must
-read. Paragraphs are what make a review unglanceable: every item is a
-checkbox anchored to a `file:line`, one sentence, never more. Lead with
-a one-line count of findings by class, then these sections in order,
-each headed with its count (`Verified clean` is the exception -- see
-below); omit any section that's empty:
+read. Paragraphs are what make a review unglanceable: outside the
+`Blocking` section, every item is a checkbox anchored to a `file:line`,
+one sentence, never more. Lead with a one-line count of findings by
+class, then these sections in order, each headed with its count
+(`Verified clean` is the exception -- see below); omit any section
+that's empty:
 
 ```
 ### Blocking (N)
@@ -302,11 +303,16 @@ privilege.
 ```
 
 `Blocking` holds every `blocking` finding (present only on
-REQUEST_CHANGES); `Needs your judgment` and `Notes, no action needed`
-hold `judgment` and `note` findings respectively. `Verified clean`
-collapses to a single comma-separated line and carries no count and no
-checkboxes -- it exists so the operator knows coverage happened, not to
-be read item by item; don't give it a paragraph per item. `Could not
-verify` lists what you couldn't evaluate and why -- this is the section
-that keeps step 2 of the verdict rubric honest. No preamble, no
-restating the diff back.
+REQUEST_CHANGES), and it is the one section worth more than a sentence
+per item: `REQUEST_CHANGES` drives the author's rework loop, so a
+`Blocking` item is read by the agent doing the fix rather than skimmed
+by the operator. Give it the file, the line, what's wrong, and what
+"fixed" looks like, at whatever length that honestly takes -- a
+compressed blocking finding just buys another round. `Needs your
+judgment` and `Notes, no action needed` hold `judgment` and `note`
+findings respectively. `Verified clean` collapses to a single
+comma-separated line and carries no count and no checkboxes -- it
+exists so the operator knows coverage happened, not to be read item by
+item; don't give it a paragraph per item. `Could not verify` lists what
+you couldn't evaluate and why -- this is the section that keeps step 2
+of the verdict rubric honest. No preamble, no restating the diff back.
